@@ -1,17 +1,21 @@
 import { useRef, useEffect } from "react"
-import { MOCK_TRANSCRIPT } from "@/lib/transcript"
+import { useStore } from "@/hooks/useStore"
 import { TranscriptSessionHeader } from "./transcript-session-header"
-import { TranscriptSegmentItem } from "./transcript-segment"
+import { LiveTranscriptSegment } from "./live-transcript-segment"
 import { InterimTranscript } from "./interim-transcript"
 
 export function TranscriptView() {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const transcript = useStore((s) => s.transcript)
+  const interimText = useStore((s) => s.interimText)
+  const keywords = useStore((s) => s.keywords)
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [])
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    })
+  }, [transcript, interimText])
 
   return (
     <div
@@ -24,14 +28,21 @@ export function TranscriptView() {
       <div className="mx-auto max-w-3xl">
         <TranscriptSessionHeader />
         <div className="space-y-6">
-          {MOCK_TRANSCRIPT.map((segment) => (
-            <TranscriptSegmentItem key={segment.id} segment={segment} />
+          {transcript.length === 0 && !interimText && (
+            <p className="text-slate-500 text-center py-12">
+              Ready to listen. Upload a syllabus PDF, then click Start to begin.
+            </p>
+          )}
+          {transcript.map((item) => (
+            <LiveTranscriptSegment key={item.id} item={item} />
           ))}
-          <InterimTranscript
-            finalText="The Hessian matrix"
-            interimText="of the cost function gives us second-order information about the curvature of the optimization landscape, which helps us..."
-            keywords={["Hessian matrix"]}
-          />
+          {interimText && (
+            <InterimTranscript
+              finalText=""
+              interimText={interimText}
+              keywords={keywords}
+            />
+          )}
         </div>
       </div>
     </div>
