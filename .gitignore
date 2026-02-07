@@ -14,3 +14,10 @@ dist/
 
 # TypeScript incremental build
 *.tsbuildinfo
+
+# Python / backend
+.venv/
+__pycache__/
+*.pyc
+.env
+api.env
