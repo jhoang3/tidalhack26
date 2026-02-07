@@ -30,7 +30,7 @@ export function ControlBar() {
   }
 
   return (
-    <div className="border-t border-slate-800 bg-slate-900/90 backdrop-blur-md">
+    <div className="border-t border-slate-800 bg-slate-900/95 backdrop-blur-xl shadow-[0_-4px_24px_-4px_rgba(0,0,0,0.3)]">
       <div className="mx-auto flex h-24 max-w-5xl items-center justify-between px-6">
         <div className="hidden flex-1 items-center sm:flex">
           <AudioWaveform active={isRecording} />
@@ -38,7 +38,9 @@ export function ControlBar() {
         <div className="flex flex-1 flex-col items-center justify-center gap-1">
           <MicButton isRecording={isRecording} onToggle={handleMicToggle} />
           {recorderError === "permission_denied" && (
-            <span className="text-xs text-red-400">Microphone access denied</span>
+            <span className="text-xs text-red-400 animate-pulse">
+              Microphone access denied — check browser settings
+            </span>
           )}
         </div>
         <ControlBarSettings textSize={textSize} onTextSizeChange={cycleTextSize} />

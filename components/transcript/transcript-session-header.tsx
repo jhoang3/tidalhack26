@@ -5,19 +5,19 @@ interface TranscriptSessionHeaderProps {
 }
 
 export function TranscriptSessionHeader({
-  title = "Advanced Fluid Dynamics — Lecture 14",
-  subtitle = "Live Session",
-  date = "Prof. A. Reynolds · Feb 7, 2026 · 10:00 AM",
+  title = "Live Session",
+  subtitle = "LectureBridge",
+  date = "Ready for captioning",
 }: TranscriptSessionHeaderProps) {
   return (
-    <div className="mb-8">
-      <h2 className="text-sm font-medium uppercase tracking-wider text-slate-500">
+    <div className="mb-8 pb-6 border-b border-slate-800/80">
+      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
         {subtitle}
-      </h2>
-      <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">
-        {title}
       </p>
-      <p className="mt-1 text-sm text-slate-500">
+      <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-50">
+        {title}
+      </h2>
+      <p className="mt-0.5 text-sm text-slate-500">
         {date}
       </p>
     </div>

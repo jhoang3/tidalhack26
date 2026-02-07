@@ -22,7 +22,7 @@ export function HighlightedText({ text, keywords }: HighlightedTextProps) {
       parts.push(
         <mark
           key={`${keyword}-${idx}`}
-          className="rounded bg-transparent font-semibold text-yellow-400"
+          className="rounded bg-amber-500/10 font-semibold text-amber-400 px-0.5"
         >
           {remaining.slice(idx, idx + keyword.length)}
         </mark>

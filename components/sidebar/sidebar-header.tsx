@@ -8,7 +8,7 @@ export function SidebarHeader() {
         <h1 className="text-lg font-semibold tracking-tight text-slate-50">
           LectureBridge
         </h1>
-        <p className="text-xs text-slate-500">AI-Powered Captioning</p>
+        <p className="text-xs text-slate-500">Context-aware live captioning</p>
       </div>
     </div>
   )

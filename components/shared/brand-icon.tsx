@@ -11,9 +11,9 @@ export function BrandIcon({ size = "md", className }: BrandIconProps) {
 
   return (
     <div
-      className={`flex ${containerClass} items-center justify-center rounded-lg bg-yellow-500/10 ${className ?? ""}`}
+      className={`flex ${containerClass} items-center justify-center rounded-lg bg-amber-500/10 ring-1 ring-amber-500/20 ${className ?? ""}`}
     >
-      <Sparkles className={`${iconSize} text-yellow-500`} aria-hidden="true" />
+      <Sparkles className={`${iconSize} text-amber-400`} aria-hidden="true" />
     </div>
   )
 }

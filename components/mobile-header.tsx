@@ -18,7 +18,7 @@ export function MobileHeader({ isOpen, onToggle }: MobileHeaderProps) {
       <button
         type="button"
         onClick={onToggle}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
         aria-label={isOpen ? "Close sidebar menu" : "Open sidebar menu"}
         aria-expanded={isOpen}
       >

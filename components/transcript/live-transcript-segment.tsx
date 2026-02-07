@@ -10,9 +10,9 @@ export function LiveTranscriptSegment({ item }: LiveTranscriptSegmentProps) {
   const keywords = useStore((s) => s.keywords)
 
   return (
-    <div className="group">
+    <div className="group rounded-lg px-1 py-2 transition-colors hover:bg-slate-800/20">
       {item.timestamp && (
-        <span className="mb-1 block text-xs tabular-nums text-slate-600">
+        <span className="mb-1 block text-xs tabular-nums text-slate-500">
           {item.timestamp}
         </span>
       )}
