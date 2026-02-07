@@ -144,12 +144,14 @@ uvicorn main:app --reload
 ### Frontend Setup
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (use --legacy-peer-deps if you encounter peer dependency conflicts)
+npm install --legacy-peer-deps
 
-# Start development server
+# Start development server (Vite)
 npm run dev
 ```
+
+The app will be available at **http://localhost:5173**. For production build: `npm run build` (output in `dist/`).
 
 ---
 

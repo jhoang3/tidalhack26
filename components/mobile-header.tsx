@@ -1,6 +1,5 @@
-"use client"
-
-import { Menu, X, Sparkles } from "lucide-react"
+import { Menu, X } from "lucide-react"
+import { BrandIcon } from "@/components/shared/brand-icon"
 
 interface MobileHeaderProps {
   isOpen: boolean
@@ -11,9 +10,7 @@ export function MobileHeader({ isOpen, onToggle }: MobileHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b border-slate-800 bg-slate-900/90 px-4 backdrop-blur-md lg:hidden">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/10">
-          <Sparkles className="h-4 w-4 text-yellow-500" aria-hidden="true" />
-        </div>
+        <BrandIcon size="sm" />
         <span className="text-sm font-semibold text-slate-50">
           LectureBridge
         </span>
