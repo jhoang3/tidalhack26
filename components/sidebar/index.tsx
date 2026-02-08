@@ -1,5 +1,6 @@
 import { SidebarHeader } from "./sidebar-header"
 import { PdfDropzone } from "./pdf-dropzone"
+import { AudioDropzone } from "./audio-dropzone"
 import { KeywordList } from "./keyword-list"
 import { ConnectionStatus } from "./connection-status"
 
@@ -14,6 +15,8 @@ export function Sidebar({ className }: SidebarProps) {
         <SidebarHeader />
         <div className="mx-6 h-px bg-slate-800" />
         <PdfDropzone />
+        <div className="mx-6 h-px bg-slate-800" />
+        <AudioDropzone />
         <div className="mx-6 h-px bg-slate-800" />
         <KeywordList />
         <ConnectionStatus />

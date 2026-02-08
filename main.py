@@ -5,7 +5,7 @@ FastAPI app. Run: uvicorn main:app --reload --port 8000
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import upload_pdf, transcribe
+from routers import upload, upload_pdf, transcribe
 
 app = FastAPI(
     title="Audio-ASR + PDF Pipeline",
@@ -24,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(upload_pdf.router)
+app.include_router(upload.router)
 app.include_router(transcribe.router)
 
 

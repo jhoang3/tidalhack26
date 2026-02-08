@@ -30,6 +30,7 @@ interface AppState {
   setTextSize: (size: TextSize) => void
   setConnectionStatus: (status: ConnectionStatusType) => void
   resetTranscript: () => void
+  setTranscriptFull: (text: string) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -60,4 +61,17 @@ export const useStore = create<AppState>((set) => ({
   setIsRecording: (recording) => set({ isRecording: recording }),
 
   resetTranscript: () => set({ transcript: [], interimText: "" }),
+
+  setTranscriptFull: (text) =>
+    set({
+      transcript: [
+        {
+          id: crypto.randomUUID(),
+          text,
+          isFinal: true,
+          confidence: 1,
+        },
+      ],
+      interimText: "",
+    }),
 }))
