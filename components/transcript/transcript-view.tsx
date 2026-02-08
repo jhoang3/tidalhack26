@@ -13,7 +13,12 @@ export function TranscriptView() {
   const keywords = useStore((s) => s.keywords)
   const sessionId = useStore((s) => s.sessionId)
   const useFakeMode = useStore((s) => s.useFakeMode)
+  const textSize = useStore((s) => s.textSize)
+  const resetTranscript = useStore((s) => s.resetTranscript)
   const hasContext = !!sessionId || useFakeMode
+
+  const textSizeClass =
+    textSize === "sm" ? "text-base" : textSize === "md" ? "text-lg" : "text-xl"
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -33,8 +38,20 @@ export function TranscriptView() {
       aria-live="polite"
     >
       <div className="mx-auto max-w-3xl">
-        <TranscriptSessionHeader />
-        <div className="space-y-6">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <TranscriptSessionHeader />
+          {(transcript.length > 0 || interimText) && (
+            <button
+              type="button"
+              onClick={resetTranscript}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+              aria-label="Clear transcript"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className={`space-y-6 leading-relaxed ${textSizeClass}`}>
           <AnimatePresence mode="popLayout">
             {isEmpty && (
               <motion.div

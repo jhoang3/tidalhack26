@@ -20,7 +20,7 @@ export function InterimTranscript({
           {timestamp}
         </span>
       )}
-      <p className="text-lg leading-relaxed text-slate-50">
+      <p className="leading-relaxed text-slate-50 [font-size:inherit]">
         {finalText && (
           <span>
             <HighlightedText text={finalText} keywords={keywords} />

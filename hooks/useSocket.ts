@@ -10,10 +10,15 @@ interface TranscriptMessage {
 }
 
 const THROTTLE_MS = 100
+const MAX_RECONNECT_ATTEMPTS = 3
+const BASE_RECONNECT_DELAY_MS = 1000
 
 export function useSocket(url: string | null, enabled: boolean) {
   const [status, setStatus] = useState<SocketStatus>("idle")
   const socketRef = useRef<WebSocket | null>(null)
+  const reconnectAttemptRef = useRef(0)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const userDisconnectRef = useRef(false)
 
   const syncStatusToStore = (s: SocketStatus) => {
     setStatus(s)
@@ -66,10 +71,12 @@ export function useSocket(url: string | null, enabled: boolean) {
   const connect = useCallback(() => {
     if (!url || !enabled) return
 
+    userDisconnectRef.current = false
     syncStatusToStore("connecting")
     const ws = new WebSocket(url)
 
     ws.onopen = () => {
+      reconnectAttemptRef.current = 0
       syncStatusToStore("connected")
       socketRef.current = ws
     }
@@ -78,8 +85,24 @@ export function useSocket(url: string | null, enabled: boolean) {
 
     ws.onclose = () => {
       socketRef.current = null
-      syncStatusToStore("disconnected")
       flushPendingInterim()
+
+      if (userDisconnectRef.current) {
+        syncStatusToStore("idle")
+        return
+      }
+
+      syncStatusToStore("disconnected")
+
+      if (enabled && reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
+        const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptRef.current)
+        reconnectAttemptRef.current++
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connect()
+        }, delay)
+      } else {
+        syncStatusToStore("error")
+      }
     }
 
     ws.onerror = () => {
@@ -90,6 +113,12 @@ export function useSocket(url: string | null, enabled: boolean) {
   }, [url, enabled, handleMessage, flushPendingInterim])
 
   const disconnect = useCallback(() => {
+    userDisconnectRef.current = true
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+      reconnectTimeoutRef.current = null
+    }
+    reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS
     if (socketRef.current) {
       socketRef.current.close()
       socketRef.current = null

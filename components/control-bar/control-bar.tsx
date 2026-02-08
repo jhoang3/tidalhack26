@@ -1,11 +1,15 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AudioWaveform } from "@/components/audio-waveform"
 import { MicButton } from "./mic-button"
 import { ControlBarSettings } from "./control-bar-settings"
 import { useRecordingSession } from "@/hooks/useRecordingSession"
+import { useStore } from "@/hooks/useStore"
 
 export function ControlBar() {
-  const [textSize, setTextSize] = useState<"sm" | "md" | "lg">("md")
+  const textSize = useStore((s) => s.textSize)
+  const setTextSize = useStore((s) => s.setTextSize)
+  const sessionId = useStore((s) => s.sessionId)
+  const useFakeMode = useStore((s) => s.useFakeMode)
   const {
     isRecording,
     startRecording,
@@ -13,17 +17,27 @@ export function ControlBar() {
     recorderError,
   } = useRecordingSession()
 
+  const [startHint, setStartHint] = useState(false)
+  const canStart = !!sessionId || useFakeMode
+
+  useEffect(() => {
+    if (startHint) {
+      const t = setTimeout(() => setStartHint(false), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [startHint])
+
   const cycleTextSize = () => {
-    setTextSize((prev) => {
-      if (prev === "sm") return "md"
-      if (prev === "md") return "lg"
-      return "sm"
-    })
+    setTextSize(
+      textSize === "sm" ? "md" : textSize === "md" ? "lg" : "sm"
+    )
   }
 
   const handleMicToggle = () => {
     if (isRecording) {
       stopRecording()
+    } else if (!canStart) {
+      setStartHint(true)
     } else {
       startRecording()
     }
@@ -40,6 +54,11 @@ export function ControlBar() {
           {recorderError === "permission_denied" && (
             <span className="text-xs text-red-400 animate-pulse">
               Microphone access denied — check browser settings
+            </span>
+          )}
+          {startHint && (
+            <span className="text-xs text-amber-400">
+              Upload a PDF or enable Fake Mode to start
             </span>
           )}
         </div>

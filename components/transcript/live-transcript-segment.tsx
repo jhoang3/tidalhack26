@@ -16,7 +16,7 @@ export function LiveTranscriptSegment({ item }: LiveTranscriptSegmentProps) {
           {item.timestamp}
         </span>
       )}
-      <p className="text-lg leading-relaxed text-slate-50">
+      <p className="leading-relaxed text-slate-50 [font-size:inherit]">
         <HighlightedText text={item.text} keywords={keywords} />
       </p>
     </div>
