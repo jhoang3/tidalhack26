@@ -13,9 +13,22 @@ class UploadPdfResponse(BaseModel):
 
 
 # --- Upload Audio ---
+class TimedWord(BaseModel):
+    word: str
+    start: float
+    end: float
+
+
+class TimedSegment(BaseModel):
+    transcript: str
+    words: list[TimedWord] = Field(default_factory=list)
+
+
 class UploadAudioResponse(BaseModel):
     transcript: str
     session_id: str
+    words: list[TimedWord] = Field(default_factory=list, description="Word-level timestamps for sync-with-playback")
+    segments: list[TimedSegment] = Field(default_factory=list, description="Utterance segments with punctuation")
 
 
 # --- Session ---

@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 import config
-from schemas import UploadAudioResponse, UploadPdfResponse
+from schemas import TimedSegment, TimedWord, UploadAudioResponse, UploadPdfResponse
 from services import asr_service, pdf_service, session_store
 
 router = APIRouter(prefix="", tags=["upload"])
@@ -21,7 +21,7 @@ async def upload_pdf(file: UploadFile = File(..., description="PDF file")):
         tmp.write(content)
         tmp_path = Path(tmp.name)
     try:
-        keywords = pdf_service.process_pdf(tmp_path, top_n=config.KEYWORDS_TOP_N)
+        keywords = pdf_service.process_pdf(tmp_path, top_n=config.MAX_KEYWORDS)
         session_id = session_store.create_session(keywords)
         return UploadPdfResponse(session_id=session_id, keywords=keywords)
     finally:
@@ -55,7 +55,7 @@ async def upload_audio(
         tmp_path = Path(tmp.name)
     try:
         try:
-            transcript = await asr_service.transcribe_audio(tmp_path, keywords=keywords)
+            transcript, _, words, segments = await asr_service.transcribe_audio(tmp_path, keywords=keywords)
         except ValueError as e:
             raise HTTPException(503, detail=str(e))  # e.g. missing DEEPGRAM_API_KEY
         if session_id:
@@ -63,6 +63,11 @@ async def upload_audio(
         else:
             session_id = session_store.create_session([])
             session_store.update_session_transcript(session_id, transcript)
-        return UploadAudioResponse(transcript=transcript, session_id=session_id)
+        timed_words = [TimedWord(word=w["word"], start=w["start"], end=w["end"]) for w in words]
+        timed_segments = [
+            TimedSegment(transcript=s["transcript"], words=[TimedWord(word=w["word"], start=w["start"], end=w["end"]) for w in s["words"]])
+            for s in segments
+        ]
+        return UploadAudioResponse(transcript=transcript, session_id=session_id, words=timed_words, segments=timed_segments)
     finally:
         tmp_path.unlink(missing_ok=True)

@@ -39,7 +39,7 @@ async def transcribe(
         tmp_path = Path(tmp.name)
     try:
         try:
-            transcript_text, confidence = await asr_service.transcribe_audio(
+            transcript_text, confidence, _, _ = await asr_service.transcribe_audio(
                 tmp_path,
                 keywords=keywords_used if keywords_used else None,
             )

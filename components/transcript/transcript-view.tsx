@@ -5,11 +5,15 @@ import { useStore } from "@/hooks/useStore"
 import { TranscriptSessionHeader } from "./transcript-session-header"
 import { LiveTranscriptSegment } from "./live-transcript-segment"
 import { InterimTranscript } from "./interim-transcript"
+import { TimedTranscriptView } from "./timed-transcript-view"
 
 export function TranscriptView() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const transcript = useStore((s) => s.transcript)
   const interimText = useStore((s) => s.interimText)
+  const timedWords = useStore((s) => s.timedWords)
+  const timedSegments = useStore((s) => s.timedSegments)
+  const audioUrl = useStore((s) => s.audioUrl)
   const keywords = useStore((s) => s.keywords)
   const sessionId = useStore((s) => s.sessionId)
   const useFakeMode = useStore((s) => s.useFakeMode)
@@ -17,15 +21,17 @@ export function TranscriptView() {
   const resetTranscript = useStore((s) => s.resetTranscript)
   const hasContext = !!sessionId || useFakeMode
 
+  const hasTimedPlayback = timedWords.length > 0 && !!audioUrl
+
   const textSizeClass =
     textSize === "sm" ? "text-base" : textSize === "md" ? "text-lg" : "text-xl"
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
+      top: 0,
       behavior: "smooth",
     })
-  }, [transcript, interimText])
+  }, [transcript, interimText, hasTimedPlayback])
 
   const isEmpty = transcript.length === 0 && !interimText
 
@@ -40,7 +46,7 @@ export function TranscriptView() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between gap-4">
           <TranscriptSessionHeader />
-          {(transcript.length > 0 || interimText) && (
+          {(transcript.length > 0 || interimText || hasTimedPlayback) && (
             <button
               type="button"
               onClick={resetTranscript}
@@ -76,18 +82,19 @@ export function TranscriptView() {
               </motion.div>
             )}
 
-            {transcript.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, delay: index * 0.02 }}
-              >
-                <LiveTranscriptSegment item={item} />
-              </motion.div>
-            ))}
+            {!hasTimedPlayback &&
+              transcript.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15, delay: index * 0.02 }}
+                >
+                  <LiveTranscriptSegment item={item} />
+                </motion.div>
+              ))}
 
-            {interimText && (
+            {interimText && !hasTimedPlayback && (
               <motion.div
                 key="interim"
                 initial={{ opacity: 0 }}
@@ -98,6 +105,21 @@ export function TranscriptView() {
                   finalText=""
                   interimText={interimText}
                   keywords={keywords}
+                />
+              </motion.div>
+            )}
+
+            {hasTimedPlayback && audioUrl && (
+              <motion.div
+                key="timed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <TimedTranscriptView
+                  timedWords={timedWords}
+                  timedSegments={timedSegments}
+                  audioUrl={audioUrl}
                 />
               </motion.div>
             )}

@@ -8,6 +8,17 @@ export interface TranscriptItem {
   timestamp?: string
 }
 
+export interface TimedWord {
+  word: string
+  start: number
+  end: number
+}
+
+export interface TimedSegment {
+  transcript: string
+  words: TimedWord[]
+}
+
 export type TextSize = "sm" | "md" | "lg"
 
 export type ConnectionStatusType = "idle" | "connecting" | "connected" | "disconnected" | "error"
@@ -21,6 +32,10 @@ interface AppState {
   keywords: string[]
   useFakeMode: boolean
   textSize: TextSize
+  /** Word-level timestamps for sync-with-playback (from audio upload) */
+  timedWords: TimedWord[]
+  /** Object URL for playing the uploaded audio in sync with transcript */
+  audioUrl: string | null
   setSessionId: (id: string | null) => void
   addTranscriptItem: (item: TranscriptItem) => void
   setInterimText: (text: string) => void
@@ -31,6 +46,7 @@ interface AppState {
   setConnectionStatus: (status: ConnectionStatusType) => void
   resetTranscript: () => void
   setTranscriptFull: (text: string) => void
+  setTimedTranscript: (transcript: string, words: TimedWord[], segments: TimedSegment[], audioUrl: string | null) => void
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -42,8 +58,13 @@ export const useStore = create<AppState>((set) => ({
   useFakeMode: false,
   textSize: "md" as TextSize,
   connectionStatus: "idle" as ConnectionStatusType,
+  timedWords: [],
+  timedSegments: [],
+  audioUrl: null,
+  audioLevelSource: null,
 
   setSessionId: (id) => set({ sessionId: id }),
+  setAudioLevelSource: (source) => set({ audioLevelSource: source }),
   setTextSize: (size) => set({ textSize: size }),
   setUseFakeMode: (use) => set({ useFakeMode: use }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
@@ -60,18 +81,64 @@ export const useStore = create<AppState>((set) => ({
 
   setIsRecording: (recording) => set({ isRecording: recording }),
 
-  resetTranscript: () => set({ transcript: [], interimText: "" }),
+  resetTranscript: () =>
+    set((state) => {
+      if (state.audioUrl) URL.revokeObjectURL(state.audioUrl)
+      return {
+        transcript: [],
+        interimText: "",
+        timedWords: [],
+        timedSegments: [],
+        audioUrl: null,
+        audioLevelSource: null,
+      }
+    }),
 
-  setTranscriptFull: (text) =>
-    set({
-      transcript: [
-        {
+  setTranscriptFull: (text) => {
+    const sentences = text
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    const items = sentences.length
+      ? sentences.map((s) => ({
           id: crypto.randomUUID(),
-          text,
+          text: s,
           isFinal: true,
           confidence: 1,
-        },
-      ],
+        }))
+      : [
+          {
+            id: crypto.randomUUID(),
+            text,
+            isFinal: true,
+            confidence: 1,
+          },
+        ]
+    set({
+      transcript: items,
       interimText: "",
+      timedWords: [],
+      timedSegments: [],
+      audioUrl: null,
+    })
+  },
+
+  setTimedTranscript: (transcript, words, segments, audioUrl) =>
+    set((state) => {
+      if (state.audioUrl) URL.revokeObjectURL(state.audioUrl)
+      return {
+        transcript: [
+          {
+            id: crypto.randomUUID(),
+            text: transcript,
+            isFinal: true,
+            confidence: 1,
+          },
+        ],
+        interimText: "",
+        timedWords: words,
+        timedSegments: segments,
+        audioUrl,
+      }
     }),
 }))

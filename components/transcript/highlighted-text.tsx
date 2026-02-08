@@ -12,10 +12,12 @@ export function HighlightedText({ text, keywords }: HighlightedTextProps) {
   let remaining = text
 
   for (const keyword of keywords) {
-    const regex = new RegExp(`(${keyword})`, "gi")
-    const match = remaining.match(regex)
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi")
+    const match = regex.exec(remaining)
     if (match) {
-      const idx = remaining.toLowerCase().indexOf(keyword.toLowerCase())
+      const idx = match.index
+      const matchedText = match[0]
       if (idx > 0) {
         parts.push(remaining.slice(0, idx))
       }
@@ -24,10 +26,10 @@ export function HighlightedText({ text, keywords }: HighlightedTextProps) {
           key={`${keyword}-${idx}`}
           className="rounded bg-amber-500/10 font-semibold text-amber-400 px-0.5"
         >
-          {remaining.slice(idx, idx + keyword.length)}
+          {matchedText}
         </mark>
       )
-      remaining = remaining.slice(idx + keyword.length)
+      remaining = remaining.slice(idx + matchedText.length)
     }
   }
 

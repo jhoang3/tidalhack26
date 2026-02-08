@@ -9,14 +9,28 @@ const getApiBase = () => {
 export const getUploadUrl = () => `${getApiBase()}/upload`
 export const getUploadAudioUrl = () => `${getApiBase()}/upload-audio`
 
-export const getWebSocketUrl = (sessionId: string) => {
+/** Base WebSocket URL for live transcription. sessionId is optional (for keyword biasing). */
+export const getWebSocketUrl = (sessionId: string | null) => {
   const base = getApiBase().replace(/^http/, "ws")
-  return `${base}/listen?session_id=${sessionId}`
+  return sessionId ? `${base}/listen?session_id=${sessionId}` : `${base}/listen`
+}
+
+export interface TimedWord {
+  word: string
+  start: number
+  end: number
+}
+
+export interface TimedSegment {
+  transcript: string
+  words: TimedWord[]
 }
 
 export interface UploadAudioResponse {
   transcript: string
   session_id: string
+  words?: TimedWord[]
+  segments?: TimedSegment[]
 }
 
 export async function uploadAudio(

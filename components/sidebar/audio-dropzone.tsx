@@ -30,6 +30,7 @@ export function AudioDropzone() {
   const keywords = useStore((s) => s.keywords)
   const setSessionId = useStore((s) => s.setSessionId)
   const setTranscriptFull = useStore((s) => s.setTranscriptFull)
+  const setTimedTranscript = useStore((s) => s.setTimedTranscript)
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -39,13 +40,18 @@ export function AudioDropzone() {
       setError(null)
 
       try {
-        const { transcript, session_id } = await uploadAudio(
+        const { transcript, session_id, words = [], segments = [] } = await uploadAudio(
           file,
           sessionId ?? undefined,
           keywords.length ? keywords : undefined
         )
         setSessionId(session_id)
-        setTranscriptFull(transcript)
+        if (words.length || segments.length) {
+          const audioUrl = URL.createObjectURL(file)
+          setTimedTranscript(transcript, words, segments, audioUrl)
+        } else {
+          setTranscriptFull(transcript)
+        }
         setUploadedFile(file.name)
       } catch (err) {
         const message =
@@ -60,7 +66,7 @@ export function AudioDropzone() {
         setIsUploading(false)
       }
     },
-    [sessionId, keywords, setSessionId, setTranscriptFull]
+    [sessionId, keywords, setSessionId, setTranscriptFull, setTimedTranscript]
   )
 
   const handleRemove = useCallback(() => {

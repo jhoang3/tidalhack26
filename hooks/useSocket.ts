@@ -68,8 +68,17 @@ export function useSocket(url: string | null, enabled: boolean) {
     }
   }, [])
 
-  const connect = useCallback(() => {
-    if (!url || !enabled) return
+  const send = useCallback((data: Blob) => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(data)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !url) {
+      setStatus("idle")
+      return
+    }
 
     userDisconnectRef.current = false
     syncStatusToStore("connecting")
@@ -83,61 +92,68 @@ export function useSocket(url: string | null, enabled: boolean) {
 
     ws.onmessage = handleMessage
 
+    const tryReconnect = () => {
+      if (
+        userDisconnectRef.current ||
+        !enabled ||
+        reconnectAttemptRef.current >= MAX_RECONNECT_ATTEMPTS
+      ) {
+        syncStatusToStore("error")
+        return
+      }
+      const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptRef.current)
+      reconnectAttemptRef.current++
+      reconnectTimeoutRef.current = setTimeout(() => {
+        reconnectAttemptRef.current = 0
+        userDisconnectRef.current = false
+        syncStatusToStore("connecting")
+        const ws2 = new WebSocket(url)
+        ws2.onopen = () => {
+          syncStatusToStore("connected")
+          socketRef.current = ws2
+        }
+        ws2.onmessage = handleMessage
+        ws2.onclose = () => {
+          socketRef.current = null
+          flushPendingInterim()
+          if (!userDisconnectRef.current) {
+            syncStatusToStore("disconnected")
+            tryReconnect()
+          }
+        }
+        ws2.onerror = () => syncStatusToStore("error")
+        socketRef.current = ws2
+      }, delay)
+    }
+
     ws.onclose = () => {
       socketRef.current = null
       flushPendingInterim()
-
       if (userDisconnectRef.current) {
         syncStatusToStore("idle")
         return
       }
-
       syncStatusToStore("disconnected")
-
-      if (enabled && reconnectAttemptRef.current < MAX_RECONNECT_ATTEMPTS) {
-        const delay = BASE_RECONNECT_DELAY_MS * Math.pow(2, reconnectAttemptRef.current)
-        reconnectAttemptRef.current++
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect()
-        }, delay)
-      } else {
-        syncStatusToStore("error")
-      }
+      tryReconnect()
     }
 
-    ws.onerror = () => {
-      syncStatusToStore("error")
-    }
-
+    ws.onerror = () => syncStatusToStore("error")
     socketRef.current = ws
-  }, [url, enabled, handleMessage, flushPendingInterim])
 
-  const disconnect = useCallback(() => {
-    userDisconnectRef.current = true
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = null
+    return () => {
+      userDisconnectRef.current = true
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+        reconnectTimeoutRef.current = null
+      }
+      reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS
+      if (socketRef.current) {
+        socketRef.current.close()
+        socketRef.current = null
+      }
+      syncStatusToStore("idle")
     }
-    reconnectAttemptRef.current = MAX_RECONNECT_ATTEMPTS
-    if (socketRef.current) {
-      socketRef.current.close()
-      socketRef.current = null
-    }
-    syncStatusToStore("idle")
-  }, [])
+  }, [enabled, url])
 
-  const send = useCallback((data: Blob) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(data)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (enabled && url) {
-      connect()
-    }
-    return () => disconnect()
-  }, [enabled, url, connect, disconnect])
-
-  return { status, send, connect, disconnect }
+  return { status, send }
 }

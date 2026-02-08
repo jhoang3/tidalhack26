@@ -1,42 +1,31 @@
-import { useMemo } from "react"
+import { useAudioLevels } from "@/hooks/useAudioLevels"
 
-const BAR_COUNT = 32
+interface AudioWaveformProps {
+  /** Whether the waveform is active (recording or playback) */
+  active: boolean
+  /** Source for real levels: MediaStream (live mic) or HTMLAudioElement (playback). When null, shows idle bars. */
+  source?: MediaStream | HTMLAudioElement | null
+}
 
-export function AudioWaveform({ active }: { active: boolean }) {
-  const bars = useMemo(() => {
-    return Array.from({ length: BAR_COUNT }, (_, i) => ({
-      id: i,
-      height: Math.random() * 60 + 20,
-      delay: Math.random() * 1.2,
-      duration: 0.4 + Math.random() * 0.6,
-    }))
-  }, [])
+export function AudioWaveform({ active, source = null }: AudioWaveformProps) {
+  const levels = useAudioLevels(source, active)
 
   return (
     <div
       className="flex h-10 items-end gap-[2px]"
       role="img"
-      aria-label={active ? "Audio waveform active — recording in progress" : "Audio waveform inactive"}
+      aria-label={active ? "Audio waveform active — recording or playback" : "Audio waveform inactive"}
     >
-      {bars.map((bar) => (
+      {levels.map((height, i) => (
         <div
-          key={bar.id}
-          className={`w-[3px] rounded-full transition-all duration-300 ${
-            active
-              ? "bg-red-500/80"
-              : "bg-slate-700"
+          key={i}
+          className={`w-[3px] rounded-full transition-all duration-150 ${
+            active ? "bg-red-500/80" : "bg-slate-700"
           }`}
-          style={
-            active
-              ? {
-                  height: `${bar.height}%`,
-                  animation: `waveform-bar ${bar.duration}s ease-in-out ${bar.delay}s infinite`,
-                  transformOrigin: "bottom",
-                }
-              : {
-                  height: "15%",
-                }
-          }
+          style={{
+            height: `${height * 100}%`,
+            transformOrigin: "bottom",
+          }}
         />
       ))}
     </div>

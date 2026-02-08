@@ -25,10 +25,10 @@ def _mimetype_for_path(path: Path) -> str:
 def _transcribe_sync(
     audio_path: Path,
     keywords: Optional[list[str]] = None,
-) -> tuple[str, Optional[float]]:
+) -> tuple[str, Optional[float], list[dict], list[dict]]:
     """
     Blocking Deepgram prerecorded transcription with optional keyword biasing.
-    Returns (transcript, confidence or None).
+    Returns (transcript, confidence or None, words with timestamps).
     """
     if not config.DEEPGRAM_API_KEY:
         raise ValueError("DEEPGRAM_API_KEY is not set. Add it to .env or api.env.")
@@ -41,35 +41,59 @@ def _transcribe_sync(
         payload_bytes = f.read()
     source = {"buffer": payload_bytes, "mimetype": _mimetype_for_path(audio_path)}
 
-    options: dict = {"model": "nova-2", "smart_format": True}
+    options: dict = {
+        "model": "nova-2",
+        "smart_format": True,
+        "utterances": True,
+        "punctuate": True,
+    }
     if keywords:
         options["keywords"] = keywords
 
     response = client.transcription.sync_prerecorded(source, options)
     results = (response or {}).get("results")
     if not results:
-        return ("", None)
+        return ("", None, [], [])
+
+    # Extract transcript and confidence from channels
     channels = results.get("channels") or []
-    if not channels:
-        return ("", None)
-    alts = (channels[0] or {}).get("alternatives") or []
-    if not alts:
-        return ("", None)
-    first = alts[0] or {}
+    alts = (channels[0] or {}).get("alternatives") or [] if channels else []
+    first = (alts[0] or {}) if alts else {}
     transcript = first.get("transcript") or ""
     confidence = first.get("confidence")
     if confidence is not None and not isinstance(confidence, (int, float)):
         confidence = None
-    return (transcript, confidence)
+
+    # Extract utterances as segments (transcript + words with timestamps)
+    segments: list[dict] = []
+    words: list[dict] = []  # flat list for backward compat
+    for utt in results.get("utterances") or []:
+        seg_words: list[dict] = []
+        for w in utt.get("words") or []:
+            raw = w.get("word")
+            if not raw:
+                continue
+            display = w.get("punctuated_word") or raw
+            word_data = {
+                "word": display,
+                "start": float(w.get("start", 0)),
+                "end": float(w.get("end", 0)),
+            }
+            seg_words.append(word_data)
+            words.append(word_data)
+        utt_transcript = utt.get("transcript") or " ".join(w["word"] for w in seg_words)
+        segments.append({"transcript": utt_transcript, "words": seg_words})
+
+    return (transcript, confidence, words, segments)
 
 
 async def transcribe_audio(
     audio_path: Path,
     keywords: Optional[list[str]] = None,
-) -> tuple[str, Optional[float]]:
+) -> tuple[str, Optional[float], list[dict], list[dict]]:
     """
     Transcribe pre-recorded audio with optional keyword biasing.
     Offloads blocking Deepgram call via asyncio.to_thread.
-    Returns (transcript, confidence or None).
+    Returns (transcript, confidence or None, words, segments).
     """
     return await asyncio.to_thread(_transcribe_sync, audio_path, keywords)
