@@ -133,7 +133,7 @@ export function TimedTranscriptView({ timedWords, timedSegments, audioUrl }: Tim
         >
           <PlayPauseIcon audioRef={audioRef} />
         </button>
-        <audio ref={audioCallbackRef} src={audioUrl} className="flex-1 min-w-0 h-8" controls />
+        <audio ref={audioRef} src={audioUrl} className="flex-1 min-w-0 h-8" controls />
       </div>
 
       {/* Transcript - segmented by utterances, words sync with playback */}
