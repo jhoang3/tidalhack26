@@ -16,8 +16,8 @@ DEEPGRAM_BASE_URL: str | None = os.getenv("DEEPGRAM_BASE_URL", "").strip() or No
 
 # Optional: Gemini for keyword extraction
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "").strip()
-# Set to "true" or "1" to use Gemini for keywords on upload; otherwise uses spaCy
-USE_GEMINI_KEYWORDS: bool = os.getenv("USE_GEMINI_KEYWORDS", "").strip().lower() in ("true", "1", "yes")
+# Use Gemini for keywords when key is set (set to "false" or "0" to use spaCy instead)
+USE_GEMINI_KEYWORDS: bool = os.getenv("USE_GEMINI_KEYWORDS", "true").strip().lower() not in ("false", "0", "no")
 
 # Limits (defaults)
 MAX_AUDIO_MB: int = int(os.getenv("MAX_AUDIO_MB", "25"))
