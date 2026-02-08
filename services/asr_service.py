@@ -1,7 +1,4 @@
-"""
-Phase 3: Speech-to-text via Deepgram (prerecorded).
-Keyword biasing from Phase 2 vocabulary. Blocking calls offloaded with asyncio.to_thread.
-"""
+"""Speech-to-text via Deepgram (async). Supports keyword biasing for PDF-derived terms."""
 
 import asyncio
 from pathlib import Path
@@ -28,11 +25,11 @@ def _transcribe_sync(
 ) -> tuple[str, Optional[float], list[dict], list[dict]]:
     """
     Blocking Deepgram prerecorded transcription with optional keyword biasing.
-    Returns (transcript, confidence or None, words with timestamps).
+    Returns (transcript, confidence or None, words with timestamps, segments).
     """
     if not config.DEEPGRAM_API_KEY:
         raise ValueError("DEEPGRAM_API_KEY is not set. Add it to .env or api.env.")
-    opts: dict = {"api_key": config.DEEPGRAM_API_KEY}
+    opts = {"api_key": config.DEEPGRAM_API_KEY}
     if config.DEEPGRAM_BASE_URL:
         opts["api_url"] = config.DEEPGRAM_BASE_URL.rstrip("/")
     client = Deepgram(opts)
@@ -96,4 +93,10 @@ async def transcribe_audio(
     Offloads blocking Deepgram call via asyncio.to_thread.
     Returns (transcript, confidence or None, words, segments).
     """
-    return await asyncio.to_thread(_transcribe_sync, audio_path, keywords)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,
+        _transcribe_sync,
+        audio_path,
+        keywords,
+    )

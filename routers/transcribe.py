@@ -1,4 +1,4 @@
-"""Phase 3: POST /transcribe — Audio transcription with context-aware keyword biasing."""
+"""Router: /transcribe"""
 
 import tempfile
 from pathlib import Path
@@ -6,11 +6,21 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
 import config
-from services import asr_service, session_service
+from services import asr_service, session_store
 
 router = APIRouter(tags=["transcribe"])
 
 MAX_BYTES = config.MAX_AUDIO_MB * 1024 * 1024
+
+
+def _get_keywords_for_transcription(session_id: str | None) -> list[str]:
+    """Resolve session_id to keywords. Returns [] if missing or invalid."""
+    if not session_id or not isinstance(session_id, str):
+        return []
+    s = session_id.strip()
+    if not s:
+        return []
+    return session_store.get_keywords(s)
 
 
 @router.post("/transcribe")
@@ -20,7 +30,7 @@ async def transcribe(
 ):
     """
     Accept an MP3 upload and optional session_id. Session validation and keyword
-    resolution are handled by Phase 4; missing or invalid session_id results in
+    resolution are handled locally; missing or invalid session_id results in
     transcription without context. Returns transcript, confidence, and keywords_used.
     """
     if not file or not file.filename or not file.filename.lower().endswith(".mp3"):
@@ -31,8 +41,7 @@ async def transcribe(
             413,
             detail=f"Audio file exceeds maximum size of {config.MAX_AUDIO_MB} MB",
         )
-    # Phase 4: single place for session validation and keyword resolution (no context leakage)
-    keywords_used: list[str] = session_service.get_keywords_for_transcription(session_id)
+    keywords_used: list[str] = _get_keywords_for_transcription(session_id)
 
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
         tmp.write(content)
