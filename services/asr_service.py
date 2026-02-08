@@ -1,7 +1,4 @@
-"""
-Phase 3: Speech-to-text via Deepgram (prerecorded).
-Keyword biasing from Phase 2 vocabulary. Blocking calls offloaded with asyncio.to_thread.
-"""
+"""Speech-to-text via Deepgram (async). Supports keyword biasing for PDF-derived terms."""
 
 import asyncio
 from pathlib import Path
@@ -22,17 +19,11 @@ def _mimetype_for_path(path: Path) -> str:
     }.get(ext, "audio/mpeg")
 
 
-def _transcribe_sync(
-    audio_path: Path,
-    keywords: Optional[list[str]] = None,
-) -> tuple[str, Optional[float]]:
-    """
-    Blocking Deepgram prerecorded transcription with optional keyword biasing.
-    Returns (transcript, confidence or None).
-    """
+def _transcribe_sync(audio_path: Path, keywords: Optional[list[str]] = None) -> str:
+    """Blocking Deepgram call. Run in executor from async code."""
     if not config.DEEPGRAM_API_KEY:
         raise ValueError("DEEPGRAM_API_KEY is not set. Add it to .env or api.env.")
-    opts: dict = {"api_key": config.DEEPGRAM_API_KEY}
+    opts = {"api_key": config.DEEPGRAM_API_KEY}
     if config.DEEPGRAM_BASE_URL:
         opts["api_url"] = config.DEEPGRAM_BASE_URL.rstrip("/")
     client = Deepgram(opts)
@@ -48,28 +39,28 @@ def _transcribe_sync(
     response = client.transcription.sync_prerecorded(source, options)
     results = (response or {}).get("results")
     if not results:
-        return ("", None)
+        return ""
     channels = results.get("channels") or []
     if not channels:
-        return ("", None)
+        return ""
     alts = (channels[0] or {}).get("alternatives") or []
     if not alts:
-        return ("", None)
-    first = alts[0] or {}
-    transcript = first.get("transcript") or ""
-    confidence = first.get("confidence")
-    if confidence is not None and not isinstance(confidence, (int, float)):
-        confidence = None
-    return (transcript, confidence)
+        return ""
+    return (alts[0] or {}).get("transcript") or ""
 
 
 async def transcribe_audio(
     audio_path: Path,
     keywords: Optional[list[str]] = None,
-) -> tuple[str, Optional[float]]:
+) -> str:
     """
     Transcribe pre-recorded audio with optional keyword biasing.
-    Offloads blocking Deepgram call via asyncio.to_thread.
-    Returns (transcript, confidence or None).
+    Runs blocking Deepgram call in thread pool to keep FastAPI responsive.
     """
-    return await asyncio.to_thread(_transcribe_sync, audio_path, keywords)
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None,
+        _transcribe_sync,
+        audio_path,
+        keywords,
+    )
